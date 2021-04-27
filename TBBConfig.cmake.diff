@@ -1,0 +1,11 @@
+--- cmake/TBBConfig.cmake	2020-07-10 14:43:45.000000000 +0200
++++ cmake/TBBConfig_patched.cmake	2021-04-14 14:26:05.522172613 +0200
+@@ -57,7 +57,7 @@
+ if (NOT CMAKE_CXX_COMPILER_ID STREQUAL "GNU" AND NOT CMAKE_C_COMPILER_ID STREQUAL "GNU")
+     find_program(_gcc_executable gcc)
+     if (NOT _gcc_executable)
+-        message(FATAL_ERROR "This Intel TBB package is intended to be used only in environment with available 'gcc'")
++        message(WARNING "This Intel TBB package is intended to be used only in environment with available 'gcc'")
+     endif()
+     unset(_gcc_executable)
+ endif()

@@ -1,0 +1,11 @@
+--- src/gallium/drivers/llvmpipe/lp_screen.c	2021-04-07 18:36:56.874008400 +0200
++++ src/gallium/drivers/llvmpipe/lp_screen_patched.c	2021-04-14 14:06:00.719000128 +0200
+@@ -224,7 +224,7 @@
+    case PIPE_CAP_TEXTURE_BUFFER_OBJECTS:
+       return 1;
+    case PIPE_CAP_MAX_TEXTURE_BUFFER_SIZE:
+-      return 65536;
++      return 134217728;
+    case PIPE_CAP_TEXTURE_BUFFER_OFFSET_ALIGNMENT:
+       return 16;
+    case PIPE_CAP_PREFER_BLIT_BASED_TEXTURE_TRANSFER:
