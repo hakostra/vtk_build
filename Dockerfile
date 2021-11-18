@@ -52,10 +52,8 @@ RUN mkdir /tmp/ninja-install && \
     rm -rf /tmp/ninja-install
 
 # LLVM + Clang compilation using LLVM-7 from Centos SCL
-#ARG LLVM_VER="11.1.0"
-#ARG LLVM_URL="https://github.com/llvm/llvm-project/releases/download/llvmorg-11.1.0/llvm-project-11.1.0.src.tar.xz"
-ARG LLVM_VER="12.0.0"
-ARG LLVM_URL="https://github.com/llvm/llvm-project/releases/download/llvmorg-12.0.0/llvm-project-12.0.0.src.tar.xz"
+ARG LLVM_VER="12.0.1"
+ARG LLVM_URL="https://github.com/llvm/llvm-project/releases/download/llvmorg-12.0.1/llvm-project-12.0.1.src.tar.xz"
 RUN set -o pipefail && \
     source scl_source enable llvm-toolset-7.0 && \
     source scl_source enable rh-python38 && \
@@ -104,19 +102,12 @@ RUN set -o pipefail && \
     ninja install 2>&1 | tee ninja_install.log
 
 # Download mesa library
-ARG MESA_VER="21.0.3"
-ARG MESA_URL="https://archive.mesa3d.org/mesa-21.0.3.tar.xz"
+ARG MESA_VER="21.3.0"
+ARG MESA_URL="https://archive.mesa3d.org/mesa-21.3.0.tar.xz"
 RUN mkdir -p /opt/mesa && \
     cd /opt/mesa && \
     wget --no-verbose $MESA_URL && \
     tar -xf mesa-${MESA_VER}.tar.xz
-
-# Patch mesa
-# Ref. https://gitlab.freedesktop.org/mesa/mesa/-/merge_requests/9750
-#      https://gitlab.kitware.com/paraview/paraview/-/issues/20477
-COPY lp_screen.c.diff /opt/mesa/mesa-${MESA_VER}/
-RUN cd /opt/mesa/mesa-${MESA_VER} && \
-    patch -u src/gallium/drivers/llvmpipe/lp_screen.c -i lp_screen.c.diff
 
 # Build OSMesa
 RUN set -o pipefail && \
@@ -160,8 +151,8 @@ RUN cd /opt/TBB/tbb/ && \
 
 # VTK compilation
 ARG VTK_BRANCH="master"
-ARG VTK_COMMIT="062e0868"
-ARG VTK_VER="9.0.20210414"
+ARG VTK_COMMIT="1b4c0e94"
+ARG VTK_VER="9.1.20211118"
 ARG VTK_URL="https://gitlab.kitware.com/vtk/vtk.git"
 
 RUN source scl_source enable rh-git218 && \
@@ -193,28 +184,29 @@ RUN set -o pipefail && \
     python setup.py bdist_wheel 2>&1 | tee setup_py.log
 
 # Manually 'patch' produced wheel, adding OSMesa and TBB shared libraries
+ARG VTK_PYVER="${VTK_VER}.dev0"
 RUN source scl_source enable rh-python38 && \
     source /opt/python38/bin/activate && \
     mkdir /tmp/patch-vtkwheel && \
     cd /tmp/patch-vtkwheel && \
-    wheel unpack /opt/VTK/vtk/build/dist/vtk-${VTK_VER}-cp38-cp38-linux_x86_64.whl && \
-    cp $OSMESA_ROOT/lib64/libOSMesa.so.8.0.0 vtk-${VTK_VER}/vtkmodules/libOSMesa.so.8 && \
-    #cp $OSMESA_ROOT/lib64/libglapi.so.0.0.0 vtk-${VTK_VER}/vtkmodules/libglapi.so.0 && \
-    #cp $OSMESA_ROOT/lib64/libswrAVX2.so.0.0.0 vtk-${VTK_VER}/vtkmodules/libswrAVX2.so && \
-    #cp $OSMESA_ROOT/lib64/libswrAVX.so.0.0.0 vtk-${VTK_VER}/vtkmodules/libswrAVX.so && \
-    patchelf --set-rpath "\$ORIGIN" vtk-${VTK_VER}/vtkmodules/libOSMesa.so.8 && \
-    #patchelf --set-rpath "\$ORIGIN" vtk-${VTK_VER}/vtkmodules/libglapi.so.0 && \
-    cp /opt/mesa/mesa-${MESA_VER}/docs/license.rst vtk-${VTK_VER}/vtk-${VTK_VER}.dist-info/LICENSE-OSMesa.rst && \
-    cp $TBB_ROOT/lib/intel64/gcc4.8/libtbb* vtk-${VTK_VER}/vtkmodules/ && \
-    cp $TBB_ROOT/LICENSE vtk-${VTK_VER}/vtk-${VTK_VER}.dist-info/LICENSE-TBB && \
-    wheel pack --dest-dir /opt/VTK/vtk/build/dist/ vtk-${VTK_VER} && \
+    wheel unpack /opt/VTK/vtk/build/dist/vtk-${VTK_PYVER}-cp38-cp38-linux_x86_64.whl && \
+    cp $OSMESA_ROOT/lib64/libOSMesa.so.8.0.0 vtk-${VTK_PYVER}/vtkmodules/libOSMesa.so.8 && \
+    #cp $OSMESA_ROOT/lib64/libglapi.so.0.0.0 vtk-${VTK_PYVER}/vtkmodules/libglapi.so.0 && \
+    #cp $OSMESA_ROOT/lib64/libswrAVX2.so.0.0.0 vtk-${VTK_PYVER}/vtkmodules/libswrAVX2.so && \
+    #cp $OSMESA_ROOT/lib64/libswrAVX.so.0.0.0 vtk-${VTK_PYVER}/vtkmodules/libswrAVX.so && \
+    patchelf --set-rpath "\$ORIGIN" vtk-${VTK_PYVER}/vtkmodules/libOSMesa.so.8 && \
+    #patchelf --set-rpath "\$ORIGIN" vtk-${VTK_PYVER}/vtkmodules/libglapi.so.0 && \
+    cp /opt/mesa/mesa-${MESA_VER}/docs/license.rst vtk-${VTK_PYVER}/vtk-${VTK_PYVER}.dist-info/LICENSE-OSMesa.rst && \
+    cp $TBB_ROOT/lib/intel64/gcc4.8/libtbb* vtk-${VTK_PYVER}/vtkmodules/ && \
+    cp $TBB_ROOT/LICENSE vtk-${VTK_PYVER}/vtk-${VTK_PYVER}.dist-info/LICENSE-TBB && \
+    wheel pack --dest-dir /opt/VTK/vtk/build/dist/ vtk-${VTK_PYVER} && \
     cd / && \
     rm -rf /tmp/patch-vtkwheel
 
 # Install wheel (for testing)
 RUN source scl_source enable rh-python38 && \
     source /opt/python38/bin/activate && \
-    pip install /opt/VTK/vtk/build/dist/vtk-${VTK_VER}-cp38-cp38-linux_x86_64.whl
+    pip install /opt/VTK/vtk/build/dist/vtk-${VTK_PYVER}-cp38-cp38-linux_x86_64.whl
 
 # Add files
 COPY env.sh /opt/
